@@ -35,7 +35,9 @@ func main() {
 	readers, openerrors := openall(os.Args[1:]...)
 	defer closeall(readers...)
 
-	io.Copy(os.Stdout, io.MultiReader(readers...))
+	if _, err := io.Copy(os.Stdout, io.MultiReader(readers...)); err != nil {
+		log.Print(err)
+	}
 
 	for i := range openerrors {
 		fmt.Fprintln(os.Stderr, openerrors[i])
