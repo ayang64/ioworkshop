@@ -1,0 +1,42 @@
+digraph G {
+	// ratio=.8;
+	// graph [ranksep="0.1", pad="0"]
+	rankdir=TB;
+
+	subgraph guides {
+		rankdir=TB;
+		style=invis;
+		color=white;
+		shape=plaintext;
+		node [style=invis shape=plaintext, splines=false];
+		edge [style=invis]
+		level1 -> level2 -> level3 -> level4;
+	}
+
+	start [style=unfilled, shape=record, color=white, label="<l0>mw | := io.MultiWriter(|<l1>io.Writer, |<l2>io.Writer, |<l3>io.Writer,|<l4>..., |<lN>io.Writer)"]
+
+
+	subgraph cluster_4 {
+		mw	[style=filled,color=green,label="io.Writer"];
+		w1 [style=filled,color=lightgrey,label="io.Writer"]
+		w2 [style=filled,color=lightgrey,label="io.Writer"]
+		w3 [style=filled,color=lightgrey,label="io.Writer"]
+		wD [label="...",color=white,constraint=false]
+		wN [style=filled,color=lightgrey,label="io.Writer"]
+
+		graph [ordering="out"]
+
+		mw -> w1 -> w2 -> w3 -> wD -> wN;
+	}
+
+	start:l0 -> mw [style=dotted]
+
+	w1 -> start:l1 [style=dotted]
+	w2 -> start:l2 [style=dotted]
+	w3 -> start:l3 [style=dotted]
+	wD -> start:l4 [style=invis]
+	wN -> start:lN [style=dotted]
+
+	{rank=same start;			level1}
+	{rank=same mw, w1, w2, w3, wD, wN;	level3}
+}

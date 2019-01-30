@@ -1,0 +1,19 @@
+Part 1
+
+Description
+
+io.MultiWriter's Write() method calls each sub-write in sequence.
+
+Write a concurrent version of io.MultiWriter() that writes to each sub-writer concurrently.
+
+Questions
+
+What are the advantages and disadvantages of writing concurrenctly vs. serially?  
+
+
+Part 2
+
+What happens when you want to close the result of an io.MultiWriter?
+
+Can you write a version that is closable?  What would it take to do this?
+

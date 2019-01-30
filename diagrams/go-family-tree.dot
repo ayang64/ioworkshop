@@ -1,0 +1,90 @@
+digraph G {
+	ratio=.8;
+	graph [ranksep="0.1", pad="0"]
+	rankdir=TB;
+
+	subgraph dates {
+		rankdir=TB;
+		style=invis;
+		color=white;
+		shape=plaintext;
+		node [style=invis shape=plaintext, splines=false];
+		edge [style=invis]
+		1960 -> 1967 -> 1968 -> 1969 -> 1970 -> 1972 -> 1978 -> 1980 -> 1985 -> 1986 -> 1987 -> 1988-> 1989 -> 1991 -> 1992 -> 2009;
+		// 1960 -> 1961 -> 1962 -> 1963 -> 1964 -> 1965 -> 1966 -> 1967 -> 1968 -> 1969 -> 1970 -> 1971 -> 1972 -> 1973 -> 1974 -> 1975 -> 1976 -> 1977 -> 1978 -> 1979 -> 1980 -> 1981 -> 1982 -> 1983 -> 1984 -> 1985 -> 1986 -> 1987 -> 1988 -> 1989 -> 1990 -> 1991 -> 1992 -> 1993 -> 1994 -> 1995 -> 1996 -> 1997 -> 1998 -> 1999 -> 2000 -> 2001 -> 2002 -> 2003 -> 2004 -> 2005 -> 2006 -> 2007 -> 2008 -> 2009; 
+	}
+
+	subgraph 0 {
+		style=unfilled;
+		color=white;
+		shape=plaintext;
+		node [style=unfilled,shape=plaintext];
+		a0 -> a1 -> a2 -> a3 [weight=100];
+	}
+
+	subgraph 1 {
+		style=unfilled;
+		shape=plaintext;
+		node [style=unfilled, shape=plaintext];
+		start -> b0 -> b1 -> b2 -> b3 -> end [weight=100];
+	}
+
+	subgraph 2 {
+		style=unfilled;
+		shape=plaintext;
+		node [style=unfilled, shape=plaintext];
+		c0 -> c1 -> c2 [weight=100];
+	}
+	
+	subgraph 3 {
+		style=unfilled;
+		shape=plaintext;
+		node [style=unfilled, shape=plaintext];
+		o0
+	}
+
+	start [style=unfilled, shape=plaintext, color=white, label="ALGO 60\n(Backus et al., 1960)"];
+	start -> c0 [lhead=cluster_2];
+
+	b0 -> a2 [lhead=0];
+
+	a0 [label="CSP\n(Hoare, 1978)"];
+	a1 [label="Squeek\n(Cardelli & Pike, 1985)" style=filled color=green];
+	a2 [label="Newsqueek\n(Pike, 1989)" style=filled color=green];
+	a3 [label="Alef\n(Winterbottom, 1992)"];
+
+	b0 [label="Pascal\n(Wirth, 1970)" ];
+	b1 [label="Modula-2\n(Wirth, 1980)"];
+	b2 [label="Oberon\n(Wirth & Gutknecht,\n1986)"];
+	b3 [label="Oberon 2\n(Wirth & Mossenbock,\n1991)"];
+
+	c0 [label="BCPL\n(Richards, 1967)"]
+	c1 [label="B\n(Thompson, 1969)" style=filled color=red]
+	c2 [label="C\n(Ritchie,\nThompson 1972)" style=filled color=red];
+
+	o0 [label="Object Oberon\n(Mossenbock, Templ\n& Greisemer, 1990)" style=filled color=blue];
+
+	b2 -> o0 -> b3;
+
+	{rank=same a0; 1978}
+	{rank=same a1; 1985}
+	{rank=same a2; 1989}
+	{rank=same a3; 1992}
+
+	{rank=same b0; 1970}
+	{rank=same b1; 1980}
+	{rank=same b2; 1986}
+	{rank=same b3; 1991}
+
+	{rank=same c0; 1967}
+	{rank=same c1; 1969}
+	{rank=same c2; 1972}
+
+	{rank=same start; 1960}
+	{rank=same end; 2009}
+
+	a3 -> end;
+	c2 -> end;
+
+	end [shape=oval color=grey style=filled label="Go\n(Griesemer, Pike,\n& Thompson, 2009)"];
+}

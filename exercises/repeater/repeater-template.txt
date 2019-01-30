@@ -1,0 +1,17 @@
+package repeater
+
+type Repeater struct {
+	bytes []byte
+	pos   int
+}
+
+func (r *Repeater) Read(b []byte) (int, error) {
+    // ...your code here...
+}
+
+func New(b []byte) *Repeater {
+	return &Repeater{
+		bytes: b,
+		pos:   0,
+	}
+}

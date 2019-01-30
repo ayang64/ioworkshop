@@ -1,0 +1,54 @@
+digraph G {
+	// ratio=.8;
+	// graph [ranksep="0.1", pad="0"]
+	rankdir=TB;
+
+	subgraph guides {
+		rankdir=TB;
+		style=invis;
+		color=white;
+		shape=plaintext;
+		node [style=invis shape=plaintext, splines=false];
+		edge [style=invis]
+		level1 -> level2 -> level3 -> level4;
+	}
+
+	start [style=unfilled, shape=record, color=white, label="<l0>mr | := io.MultiReader(|<l1>r1, |<l2>r2, |<l3>r3|, ..., |<lN>rN)"]
+
+	subgraph cluster_3 {
+		color=white;
+		style=filled;
+		mr					[style=filled,color=green];
+	}
+
+
+	subgraph cluster_4 {
+		r1 [style=filled,color=lightgrey]
+		r2 [style=filled,color=lightgrey]
+		r3 [style=filled,color=lightgrey]
+		rD [style=filled,color=lightgrey]
+		rN [style=filled,color=lightgrey]
+		rD [label="...",color=white,constraint=false]
+
+		graph [ordering="out"]
+
+
+/*
+		r1 -> mr [constraint=false]
+		r2 -> r1 [constraint=false]
+		r3 -> r2 [constraint=false]
+		rD -> r3 [constraint=false]
+		rN -> rD [constraint=false]
+		*/
+	}
+
+	start:l0 -> mr [style=dotted]
+
+	r1 -> start:l1 [style=dotted]
+	r2 -> start:l2 [style=dotted]
+	r3 -> start:l3 [style=dotted]
+	rN -> start:lN [style=dotted]
+
+	{rank=same start;			level1}
+	{rank=same mr, r1, r2, r3, rD, rN;	level3}
+}

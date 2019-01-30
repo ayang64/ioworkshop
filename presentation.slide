@@ -1,0 +1,493 @@
+reading and writing
+a tour of the io package with applications and exercises
+
+january 29, 2019
+
+ayan george
+
+ayan@ayan.net
+
+* what we'll be doing
+
+i'm really greatful for this opportunity! my intentions are:
+
+- give an overview of the interfaces.
+- give an overview of the io package.
+- discuss common and creative usecases for parts of the io package.
+- interspersed will be brief exercises.
+
+: i am really greatful for this opportunity. my intentions are to respect your time. i feel like i have a lot of material to work through.
+
+* exercises
+
+- please form groups!  make friends and hopefully mix up your skill levels.  i'd like people to discuss and collaborate.
+- the time limits might seem short.  it is okay if you don't finish an exercise.  i'm trying to get you to think about the problem.
+- if you do finish the exercises, good for you!   now your friends! :)
+
+: we're only going to spend about 5-10 (maybe 15 for one) minutes on exercies.  it is okay if you don't finish them! the intention of the exercises are to get you thinking about the problem -- not to complete a full implementation.  it is okay if you stare at an empty editor and think about a solution and it is okay if you can bang out a solution ahead of time.  what i ask is that you collaborate with your friends if you find you have extra time.
+
+* interfaces
+
+.image diagrams/interface.svg 500 _
+
+* interfaces
+
+an interface type defines a method set that a type must declare to implement that interface.
+
+when you assign a value to an interface, the resulting interface value encodes:
+
+- value
+- type 
+- method-set
+
+interfaces values behave
+
+- as a proxy for the underlying type.
+
+* interface types & method declarations 
+
+ type Reader interface {
+  Read(p []byte) (int, error)
+ }
+
+ type T struct { }
+ func (t T) Read(p []byte) (int, error) {
+   // ...
+ }
+
+hoisting the type out of a function's signature allows us to to talk about functions according to what they do regardless of the type.
+
+: types that implement an interface are fungible
+: as a reformed c programmer this is huge! in many langages, APIs are bound to a type; the name of the function describes what you're trying to do (write, open, print, etc.).  the name is often followed by a value of some type that describes the details of what you're doing.
+: a value of some type is usually the first parameter to each funciton in the api and the remainder of the parameters provide the details of the task you're carrying out. 
+: fopen/open, fclose/close, fwrite/write, fseek/lseek
+: c treats functions as first class but i can't use those functions interchangbly because their signatures are different.
+
+* the io package
+
+the io.Package defines interfaces that abstracts the process of streaming I/O.  it also provides functions and methods that allows programmers to combine and arrange streams in useful ways.
+
+: two of the most often implemented interfaces are `io.Reader` and `io.Writer`. -- most implemented other than the empty interface of course.
+: readers 137 writers 184
+: other packages actually implement the interfaces it provides and use the methods to move data around.  (`*os.File`, `bytes.Reader`, etc.)
+: the io package uses interfaces to abstract the process of reading and writing streams of bytes.
+
+* io interfaces 
+
+the io.Package defines the following interfaces.  many are compositions of other interfaces (io.ReadWriteCloser, io.ReadWriter, etc.).
+
+21 interfaces defined
+
+ ByteReader      ByteScanner  ByteWriter  Closer      ReadCloser ReadSeeker  ReadWriteCloser
+ ReadWriteSeeker ReadWriter   Reader      ReaderAt    ReaderFrom RuneReader  RuneScanner
+ Seeker          StringWriter WriteCloser WriteSeeker Writer     WriterAt    WriterTo
+
+14 are not purely compositions of other interfaces
+
+ ByteReader ByteScanner ByteWriter Closer       Reader ReaderAt ReaderFrom
+ RuneReader RuneScanner Seeker     StringWriter Writer WriterAt WriterTo
+
+today we're going to focus on `io.Reader` and `io.Writer`.  We might be able to get to a couple more.
+
+: bufio.Reader and bufio.Wrier implement many of these interfaces.
+: Don't worry -- many of these are really self explanatory.
+
+* streaming io with io.Reader & io.Writer
+
+- implementations of these interfaces do the work of transferring independent series of bytes.
+- perform i/o to stream like things such as files, network connections, etc.
+- often used to encode and decode data. cryptographic operations (hashing and encryption), encoding and decoding images, etc.
+
+* benefits of using streaming i/o
+
+- we can manage small chunks of data piecemeal and have a lower and more predictable memory foot print.
+- we can compose interconnected streams to create data processing pipelines.
+- pipelines are easy to modify & adapt or "plumb" in-place to compress, tar, encrypt and otherwise transform data as it moves along.
+- pipelines can be redirected, split, duplicated, etc.
+
+ // building a pipeline in-place
+ io.Copy(r, w)
+
+ io.Copy(r, gzip.NewWriter(w)) // compressed
+ io.Copy(io.TeeReader(os.Stderr, r), w) // duplicate all reads to stderr
+
+: this is in contrast to batch I/O -- something like `ioutil.ReadAll()` -- in the sense that batch I/O is usally done in large complete chunks.
+: was actually looking at code that only did `ioutil.ReadAll()` or `ioutil.ReadFile()` and so regardless of the size of the, the program i saw will dutifully load it into memory!
+
+* questions
+
+- what would you consider to be a "bottleneck" in a pipeline?
+
+: anything that must buffer all or most of the data can be considered a clog or botleneck.  for example, would you have a pipeline that reads an image and writes a scaled version of that image?
+: one batch operation in a pipeline makes the entire process a batch operation IMHO.
+
+* reading
+
+  type Reader interface {
+    Read(p []byte) (n int, err error)
+  }
+
+- reads as many bytes as it can into the supplied byte slice.
+- returns the number of bytes read where `n` is in in the range 0 ≤ n ≤ len(p)
+- it is possible for the number of bytes read to be non-zero *and* the error to be non-`nil`. it is up to you to determine how to handle this.  that is -- returning an error doesn't mean that no bytes were read.
+
+: I can't do a better job of clarifying this than the docs so I wouldn't be offended if you pulled up the documentation for io.Reader right now.
+: Great blog post on this by Vladimier Vivien https://medium.com/learning-the-go-programming-language/streaming-io-in-go-d93507931185
+
+* questions
+
+- under what circumstances might Read() return 0 bytes and a `nil` error?
+
+: If you pass Read() an empty slice, it will dutifully return 0 bytes and no error in some cases.
+: ErrNoProgress
+
+* writing
+
+  type Writer interface {
+    Write(p []byte) (n int, err error)
+  }
+
+- Attemtps to write len(p) bytes to underlying data stream.
+- Returns 0 ≤ n ≤ len(p) bytes written and any error.
+- If it returns less than len(p), there must be an acompanying error.
+
+* exercise - lets implement io.Reader()! (8 minutes)
+
+repeater package
+
+we want a reader that will always return the same bytes without ever returning `os.EOF`.  the reader must keep track of the read position so that subsequent reads always get the next bytes. reads must "loop" around such that reading one character past the end of the supplied slice will return the first byte and so on.
+
+suggested api:
+
+ package repeater
+
+ func New(b []byte) *Repeater 
+
+ type Repeater struct { ... }
+
+ func (r *Repeater) Read(p []byte) (int, error)
+
+: I got this from an old Unix device drivers exercise -- had to do with writing your first character device -- i think from "Writing Unix Device Drivers"
+: I almost assigned a real classic Unix Device driver exercise: Echo where you would read eactly what you write to it.  In this case, you're pretty much implementing the io.Pipe routines which is not something I would expect you guys to do in 8 minutes.
+
+* questions
+
+- how would you limit the number of bytes you've read?
+- what happens if you pass the reader it a nil or empty slice?
+- what happens if you create a new repeat reader with an nil or empty slice?
+
+* io.Copy, io.CopyBuffer, & io.CopyN()
+
+fortunately, we don't often have to deal with the deatils of reading and writing directly. we can lust funcions like `io.Copy()` do the dirty work for us.
+
+- `io.Copy()` copies from the supplied writer to the supplied reader until EOF -- often allocating 32k as an intermediate buffer every call.
+- `io.CopyBuffer()` does the same but uses a supplied buffer.
+- `io.CopyN()` copies a limited numbre of bytes.
+
+: none return EOF if everything goes well since reading EOF is part of its defined behavior.
+
+* questions
+
+- why would you use `io.CopyBuffer()` instead of `io.Copy()`
+- how would you determine the optimal buffer size to pass to `io.CopyBuffer()`?
+
+* application - bigcopy
+
+big file copy code in applications/buffered-copy
+
+- benchmarking
+- benchmem
+- pprof/memprofile
+- trace heap comparison
+- run time comparison as buffer size increases
+
+: focus on BenchmarkBigCopy
+: remember to show allocations with -benchmem dummy!
+: point out that even though the test conditions aren't ideal, the performance improves as the buffer size increases.  maybe it is possible to tune/optimize the buffer size based on your environment.
+: show sawtooth allocation pattern in trace tool.
+
+* io.ReaderFrom & io.WriterTo
+
+as we saw in the `io.Copy()` source, copies can use `ReaderFrom` and `WriterTo` if available.
+
+`io.ReaderFrom` and `io.WriterTo` require imlpementing types to define `ReadFrom(r io.Reader) (int, error)` and `WriteTo(w io.Writer) (int, error)` 
+
+types that implement these interface use a writer or reader to access underlying type's buffer directly.  the intent is to bypass an intermediate buffer if it isn't nesessary.  for example, `bytes.Buffer`, `strings.Bulder`, `strings.Reader`.  those simply write to an existing underlying buffer.
+
+: I don't know of anything that WriteTo() without Write() or ReadFrom() without Read().
+: There are a few system calls that take an array of bytes -- like write(). So the `net.UnixConn`
+: io.Copy() uses it to avoid allocation.  An obvious example is bytes/buffer or
+: any other reader or writer that has an existing underlying buffer.
+
+* extra if we have time
+
+- show interference pattern program
+- `bytes.Buffer` implements `io.ReaderTo` and `io.WriterTo` -- show flat allocation pattern.
+- wrap the `bytes.Buffer` in a way that obscures the internal `io.ReaderTo` and hopefully this will reveal a sawtooth allocation pattern.
+- this is an actual case where we perform io in a tight loop and demonstrates the impact of allocation on performance.
+
+* bonus exercise - implementing your own wrapper pt1 - delay writer - 10 minutes
+
+wrap an io.Writer in a way that writes are intentionally rate limited.  maybe you can talk about the rate in bytes-per-second.
+
+recommended signature for `New` function:
+
+ New(w io.Writer, bps int) (io.Writer)
+
+usage:
+
+ sw := slowwriter.New(w, 14400 /* bits per second */)
+
+tip: don't focus on the math up front -- start with wrapping a writer and adding some fixed delay to each write.  then work on the math if you have time.
+
+* TODO: write a smooth transition to talking about package level functions that wrap/combine writers and readers in interesting ways
+
+* io.LimitReader()
+
+- wraps a reader in a way that the new reader will return `io.EOF` once the desired number of bytes have been read.
+- sets an *upper*limit* on the number of bytes read -- `EOF` can occur before the byte limit.
+- allows you to treat a subset of your stream like a complete file!
+- used quite a bit in `net/http`.
+
+.code limitreader.go
+
+: we could have used this to stop our repeat reader!
+: limitedreader: In a way, it allows you to treat a subset of a stream as as a complete file and gives you the freedom to do stuff like io.Copy() parts of a stream with confidence that it will complete within a specified bound.  reads from the reader will actually advance the underlying reader.
+: at first i used a lot of `bytes.Reader` to get EOF when i'm done reading. 
+
+* application - reading formatted data from a stream
+.image diagrams/zfs-volume-layout.svg 175 _
+
+ // seek to beginning of nvlist and clamp reader to its size.
+ //  
+ // zfs nvlist is XDR encoded data that lives between 0x4000 - 0x20000 on the volume.
+ fh.Seek(0x4000, 0)
+ nvr := io.LimitReader(fh, 0x1c000)
+
+ m, err := nvlist.Read(nvr)
+
+Allows me to treat `/boot/zfs/zpool.cache` the same as the nvlist section of the volume header
+
+: ZFS volume headers are comprised of several distinct sections.  the nvlist is xdr encoded -- the deails don't matter but 
+: talk about zfs nvlist here
+
+* io.NewSectionReader() / io.ReaderAt() / io.SectionReader()
+- Not discussing this much because it a type to implement an `io.ReaderAt()` and we're focusing on io.Reader/io.Writer.
+- Does not change the read position of the underlying type.
+- great for concurrent access to he same value.
+- Returns `io.SectionReader` with the following method-set:
+ Read(p []byte) (n int, err error)
+ ReadAt(p []byte, off int64) (n int, err error)
+ Seek(offset int64, whence int) (int64, error)
+ Size() int64
+
+: i feel like there is a lot of overlap with io.LimitReader()
+: when it comes to os.File, it is basically a wrapper for pread().
+: bytes.Reader implements ReadAt() because -- it makes sense that you can randomly access a byte slice.
+: doesn't work with all of the writer types like net.Conn
+
+* io.Pipe()
+- used to adapt anything that takes a writer to a reader and anything that takes a reader to a writer.
+- returns io.PipeReader & io.PipeWriter
+- io.PipeReader.CloseWithError() & io.PipeWriter.CloseWithError()
+- internally, uses channels for passing byte slices around and to signal closure -- this ensures ordering is sequential, provides blocking
+
+.image diagrams/pipe.svg
+
+* application - s3 uploader with io.Create() semantics
+
+the aws s3 uploader api reads from a reader.  here we use use io.pipe to retrofit the api so that it behaves like `os.Create()` so that we can write to it.
+
+ func Create(dst string) (io.Writer, error) {
+   // ... boilerplate removed ...
+   pr, pw := io.Pipe()
+   go func() {
+     uploader := s3manager.NewUploader(sess)
+     _, err := uploader.Upload(&s3manager.UploadInput{
+       Bucket: &bucket,
+       Key:    &dst,
+       Body:   pr,
+     })
+     if err != nil {
+       pr.CloseWithError(err)
+     }
+   }()
+   return pw, nil
+ }
+
+* io.TeeReader
+
+.image diagrams/tee-reader.svg
+
+- reads from the supplied reader
+- writes to the supplied writer
+- if there is an error reading or writing, the last error is returned to the caller.
+
+: If you take anything from this workshop, i'd like you to know how proud of myself i am that i was able to get this graphviz chart in a T shape.
+
+* Read()
+
+  func (t *teeReader) Read(p []byte) (n int, err error) {
+    n, err = t.r.Read(p)
+    if n > 0 {
+      if n, err := t.w.Write(p[:n]); err != nil {
+        return n, err
+      }
+    }
+    return
+  }
+
+* applications
+
+- general debugging!  if you're ever curious about what data is flowing through a given reader, you can wrap it with `io.TeeReader(r, os.Stderr)` and see it on the terminal.
+
+* io.MultiReader
+.image diagrams/multi-reader.svg
+
+- reads sequentially from a list of readers.
+- exhausts each reader before moving to the next.
+- can be considtered logically equivalent to the `cat` command.
+
+: Missed opportunity to call it io.CatReader() -- I mean, if you're blindly copying TeeReader(), you might as well continue. :)
+
+* Applications
+
+- easily combine multiple readers.
+- prepend and append data to a file. Maybe use this to append and prepend HTML data?
+
+.play -edit multireader.go /START OMIT/,/END OMIT/
+: the multireader maintains a slice of readers and reads each in order and reslices to remove exhausted readers.
+
+* Exercise - Implement the cat Command (12 minutes)
+
+as you know, the `cat` command concatinates files onto stdout.
+
+write the `cat` command using `io.MultiReader`. our `cat` command doesn't have to take any flags.  just a list of files.  if no files are provided, `cat` should read from `os.Stdin`.
+
+    $ ./cat /etc/passwd /etc/group /tmp/foo
+
+- you'll probably have to create a slice of `io.readers`.
+- remember that you can expand slices into functions that take variadic arguments.
+- it isn't necessesary for this exercise but how would you close the files?
+- what happens if one of the writers encounters an error?
+
+* io.MultiWriter()
+
+.image diagrams/multi-writer.svg
+
+- internally, stores a slice of io.Writers
+- sequentially calls `Write()` method of each entry
+- on error, it returns immediately.
+
+: If an error occurs, it completey short circuts and does not write to the remainder of the writers.  This makes it unsuitable for writes that you absolutely need to happen.
+
+: func MultiWriter(writers ...Writer) Writer
+
+* Write()
+
+  func (t *multiWriter) Write(p []byte) (n int, err error) {
+    for _, w := range t.writers {
+      n, err = w.Write(p)
+      if err != nil {
+        return
+      }
+      if n != len(p) {
+        err = ErrShortWrite
+        return
+      }
+    }
+    return len(p), nil
+  }
+
+
+* application - logging (maybe?)
+
+	writers := func() (w []io.Writer) {
+		if *logQuiet {
+			return
+		}
+		if *logFile != "" {
+			fh, err := os.Create(*logFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+			w = append(w, fh)
+		}
+		if *logStderr {
+			w = append(w, os.Stderr)
+		}
+		return
+	}
+
+	// it is cool that io.MultiWriter() effectively discards data if it has an empty writer list.
+	l := log.New(io.MultiWriter(writers()...), "DEBUG: ", log.LstdFlags|log.Ldate|log.Lshortfile)
+
+is this reliable?  if not, why?
+
+* application - hashing while downloading
+
+ func copysum(w io.Writer, r io.Reader) (hash.Hash, error) {
+   hash := sha256.New()
+   io.Copy(io.MultiWriter(o, hash), resp.Body)
+   return hash, nil
+ }
+ 
+ func main() {
+   for _, url := range os.Args[1:] {
+     dest := path.Base(url)
+     hash, err := fetchandhash(url, dest)
+     if err != nil {
+       log.Print(err)
+     }
+     fmt.Printf("%x - %s\n", hash.Sum(nil), dest)
+   }
+ }
+
+* bonus application - proxying and storing files if you have time/energy & if everyone is still awake
+
+* exercise - implementing your own wrapper pt 2 - reliable multiwriter - 15 minutes
+
+- implement a multiwriter that attempts to write to all sub-writers.
+- bonus: what would be the benefit, if any, to implent a concurrent multi-writer?  do it if you can.
+
+- how would you handle multiple errors?
+
+: So, as usual, you'll need a type and a `Write()` method assocated with it as well as a function that helps you build the writer.
+
+* Errors
+
+* io.EOF - End of file.
+
+readers return `io.EOF` when the end of file is read or if the logical end of data is read (end of a `bytes.Buffer`, `strings.Reader`, etc.)
+
+.play -edit errorsnippets/eof.go /START OMIT/,/END OMIT/
+
+* io.ErrUnexpectedEOF
+
+.play -edit errorsnippets/unexpectedeof.go /START OMIT/,/END OMIT/
+
+typically returned by routines that have expectations about how much data read.  for example, thing that consume data formatted in fixed sized rames like or some other structured way.
+
+you can find examples of it in `archive/tar`, `archive/zip`, `io.ReadAtLeast()`,
+
+should be used anytime you receive an `io.EOF` before you expect it.
+
+* application - key value pair parser
+
+- parser returns `ErrUnexpectedEOF` when eof occurs before a full pair has been read.
+
+* io.ErrShortBuffer
+
+ErrShortBuffer occurs when a read requires a longer buffer than was provided.  the only example of it I can find in-use in the standard library is in `io.ReadAtLeast()`.
+
+.play -edit errorsnippets/shortbuffer.go /START OMIT/,/END OMIT/
+
+* io.ErrShortWrite
+
+* io.ErrNoProgress
+
+.play -edit errorsnippets/eof.go /START OMIT/,/END OMIT/
+
+* io.ErrClosedPipe
+
+* Exercise - Progress Indicator

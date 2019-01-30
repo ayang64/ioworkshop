@@ -1,0 +1,43 @@
+digraph G {
+	// ratio=.8;
+	// graph [ranksep="0.1", pad="0"]
+	rankdir=TB;
+
+	subgraph guides {
+		rankdir=TB;
+		style=invis;
+		color=white;
+		shape=plaintext;
+		node [style=invis shape=plaintext, splines=false];
+		edge [style=invis]
+		level1 -> level2 -> level3 -> level4;
+	}
+
+	start [style=unfilled, shape=record, color=white, label="<l1>reader,|<l2>writer | := io.Pipe()"]
+
+	subgraph cluster_3 {
+		color=white;
+		style=filled;
+		writer1			[label="io.Writer",style=filled,color=green];
+		reader1			[label="io.Reader",style=filled,color=green];
+	}
+
+
+		reader1	-> align1 [style=invis];
+		writer1	-> align3 [style=invis];
+		align1 [style=invis]
+		align2 [style=invis]
+		align3 [style=invis]
+
+
+	subgraph cluster_4 {
+		graph [ordering="out"]
+		writer1 -> reader1 [constraint=false]
+	}
+
+		start:l1 -> reader1 [style=dotted];
+		start:l2 -> writer1 [style=dotted];
+
+	{rank=same start;			level1}
+	{rank=same writer1, reader1; invis [style=invis];		level3}
+}
